@@ -1331,11 +1331,7 @@ class DoEverythingServerFeatureTest extends FeatureTest {
       {
         "errors": [
           "max: queryParam is required",
-<<<<<<< HEAD:http/src/test/scala/com/twitter/finatra/http/integration/doeverything/test/DoEverythingServerFeatureTest.scala
-          "verbose: '5' is not a valid boolean"
-=======
           "verbose: '5' is not a valid Boolean"
->>>>>>> upstream/master:http/src/test/scala/com/twitter/finatra/http/tests/integration/doeverything/test/DoEverythingServerFeatureTest.scala
         ]
       }
       """)
@@ -1598,32 +1594,5 @@ class DoEverythingServerFeatureTest extends FeatureTest {
       withBody = "Steve")
 
     response.contentType should equal(Some(MediaType.OCTET_STREAM.toString))
-  }
-
-  "Bad request for missing header" in {
-    server.httpPost(
-      "/createUser",
-      postBody = """{"name":"bob", "age":50}""",
-      andExpect = BadRequest,
-      withBody = """{"errors":["request_id: header is required"]}"""
-    )
-  }
-
-  "Bad request for missing form param" in {
-    server.httpFormPost(
-      "/formPost",
-      params = Map("name" -> "bob"),
-      andExpect = BadRequest,
-      withBody = """{"errors":["age: formParam is required"]}""")
-  }
-
-  "accepts request with header and body" in {
-    server.httpPost(
-      "/createUser",
-      headers = Map("request_id" -> "732647326473"),
-      postBody = """{"name":"bob", "age":50}""",
-      andExpect = Created,
-      withLocation = "/users/732647326473"
-    )
   }
 }

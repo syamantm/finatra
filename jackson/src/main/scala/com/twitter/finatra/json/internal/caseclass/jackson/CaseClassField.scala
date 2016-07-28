@@ -7,11 +7,6 @@ import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.node.TreeTraversingParser
 import com.fasterxml.jackson.databind.util.ClassUtil
-<<<<<<< HEAD
-import com.twitter.finatra.json.internal.caseclass.annotations.{FormParamInternal, QueryParamInternal, HeaderInternal}
-import com.twitter.finatra.json.internal.caseclass.exceptions.CaseClassValidationException
-=======
->>>>>>> upstream/master
 import com.twitter.finatra.json.internal.caseclass.exceptions.CaseClassValidationException.PropertyPath
 import com.twitter.finatra.json.internal.caseclass.exceptions.{CaseClassValidationException, FinatraJsonMappingException}
 import com.twitter.finatra.json.internal.caseclass.reflection.CaseClassSigParser
@@ -204,15 +199,9 @@ private[finatra] case class CaseClassField(
 
   private def extractAttributeType(annotation: Annotation): Option[String] = {
     annotation match {
-<<<<<<< HEAD
-      case h : QueryParamInternal => Some("queryParam")
-      case f : FormParamInternal => Some("formParam")
-      case h : HeaderInternal => Some("header")
-=======
       case _: QueryParam => Some("queryParam")
       case _: FormParam => Some("formParam")
       case _: Header => Some("header")
->>>>>>> upstream/master
       case _ => None
     }
   }

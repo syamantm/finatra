@@ -630,13 +630,6 @@ class DoEverythingController @Inject()(
     response.created.location(s"/users/${user.requestId}")
   }
 
-<<<<<<< HEAD:http/src/test/scala/com/twitter/finatra/http/integration/doeverything/main/controllers/DoEverythingController.scala
-=======
-  post("/arrayElementValidation") { request: TestCaseClassWithSeqOfValidatedWrappedLongs =>
-    s"Size of input array: ${request.seq.size}"
-  }
-
->>>>>>> upstream/master:http/src/test/scala/com/twitter/finatra/http/tests/integration/doeverything/main/controllers/DoEverythingController.scala
   //needed to avoid colliding with Logging#trace :-/
   trace[Request, String]("/trace") { r: Request =>
     "trace 123"
