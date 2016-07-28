@@ -3,10 +3,10 @@ package com.twitter.inject.app.internal
 import com.google.inject.util.Modules
 import com.google.inject.{Module => GuiceModule, _}
 import com.twitter.app.Flag
-import com.twitter.inject.{TwitterBaseModule, TwitterModuleLifecycle, Injector, Logging, TwitterModule}
+import com.twitter.inject.{TwitterBaseModule, TwitterModuleLifecycle, Injector, Logging}
 import scala.collection.JavaConverters._
 
-object InstalledModules {
+private[app] object InstalledModules {
 
   /* Public */
 
@@ -44,14 +44,16 @@ object InstalledModules {
   /* Private */
 
   /**
-   * Recursively capture all flags in the GuiceModule object hierarchy.
+   * Recursively capture all flags in the [[com.google.inject.Module]] object hierarchy.
    *
-   * Note: We will not (cannot?) traverse through a normal Guice AbstractModule, to find 'installed' GuiceModules
+   * Note: We will not (cannot?) traverse through a normal Guice AbstractModule, to find 'installed' [[com.google.inject.Module]]s
    */
-  private[inject] def findModuleFlags(modules: Seq[GuiceModule]): Seq[Flag[_]] = {
+  private[app] def findModuleFlags(modules: Seq[GuiceModule]): Seq[Flag[_]] = {
     (modules collect {
       case injectModule: TwitterBaseModule =>
-        injectModule.flags ++ findModuleFlags(injectModule.modules)
+        injectModule.flags ++
+          findModuleFlags(injectModule.modules) ++
+          findModuleFlags(injectModule.frameworkModules)
     }).flatten.distinct
   }
 
@@ -59,18 +61,20 @@ object InstalledModules {
   private def findInstalledModules(module: GuiceModule): Seq[GuiceModule] = module match {
     case injectModule: TwitterBaseModule =>
       injectModule.modules ++
-        (injectModule.modules flatMap findInstalledModules)
+        (injectModule.modules flatMap findInstalledModules) ++
+        injectModule.frameworkModules ++
+        (injectModule.frameworkModules flatMap findInstalledModules)
     case _ =>
       Seq()
   }
 }
 
-case class InstalledModules(
+private[app] case class InstalledModules(
   injector: Injector,
   modules: Seq[GuiceModule])
   extends Logging {
 
-  def postStartup() {
+  def postInjectorStartup() {
     modules foreach {
       case injectModule: TwitterModuleLifecycle =>
         try {
@@ -84,7 +88,21 @@ case class InstalledModules(
     }
   }
 
-  // Note: We don't rethrow so that all modules have a change to shutdown
+  def postWarmupComplete(): Unit = {
+    modules foreach {
+      case injectModule: TwitterModuleLifecycle =>
+        try {
+          injectModule.singletonPostWarmupComplete(injector)
+        } catch {
+          case e: Throwable =>
+            error("Post warmup complete method error in " + injectModule, e)
+            throw e
+        }
+      case _ =>
+    }
+  }
+
+  // Note: We don't rethrow so that all modules have a chance to shutdown
   def shutdown() {
     modules foreach {
       case injectModule: TwitterModuleLifecycle =>

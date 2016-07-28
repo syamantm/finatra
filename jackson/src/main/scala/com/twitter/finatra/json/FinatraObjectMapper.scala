@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream
 import com.fasterxml.jackson.databind._
 import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import com.google.inject.Injector
-import com.twitter.finagle.httpx.{Message, Request, Response}
-import com.twitter.finatra.json.internal.caseclass.exceptions.{CaseClassMappingException, RequestFieldInjectionNotSupportedException}
+import com.twitter.finagle.http.{Message, Request, Response}
+import com.twitter.finatra.json.internal.caseclass.exceptions.RequestFieldInjectionNotSupportedException
 import com.twitter.finatra.json.internal.serde.ArrayElementsOnNewLinesPrettyPrinter
 import com.twitter.finatra.json.modules.FinatraJacksonModule
 import com.twitter.io.Buf
@@ -50,7 +50,7 @@ case class FinatraObjectMapper(
   }
 
   def reader[T: Manifest] = {
-    objectMapper.reader[T]
+    objectMapper.readerFor[T]
   }
 
   def parse[T: Manifest](message: Message): T = {
@@ -60,7 +60,7 @@ case class FinatraObjectMapper(
         throw new RequestFieldInjectionNotSupportedException()
       }
     }
-    FinatraObjectMapper.parseMessageBody(message, objectMapper.reader[T])
+    FinatraObjectMapper.parseMessageBody(message, objectMapper.readerFor[T])
   }
 
   def parse[T: Manifest](byteBuffer: ByteBuffer): T = {

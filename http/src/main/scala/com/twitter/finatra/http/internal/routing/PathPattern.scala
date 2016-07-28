@@ -5,7 +5,7 @@ import java.util.regex.Matcher
 import scala.collection.immutable
 import scala.util.matching.Regex
 
-object PathPattern extends Logging {
+private[http] object PathPattern extends Logging {
 
   /* Matches and captures route param names */
   private val NamedRouteParamRegex = """:\w+""".r
@@ -22,8 +22,8 @@ object PathPattern extends Logging {
   /* Private */
 
   private def regex(uriPattern: String): Regex = {
-    val astericksReplaced = NamedAsteriskRegex.replaceAllIn(uriPattern, """\\E(.*)\\Q""") // The special token :* captures everything after the prefix string
-    val colonNameReplaced = NamedRouteParamRegex.replaceAllIn(astericksReplaced, """\\E([^/]+)\\Q""") // Replace "colon word (e.g. :id) with a capture group that stops at the next forward slash
+    val asterisksReplaced = NamedAsteriskRegex.replaceAllIn(uriPattern, """\\E(.*)\\Q""") // The special token :* captures everything after the prefix string
+    val colonNameReplaced = NamedRouteParamRegex.replaceAllIn(asterisksReplaced, """\\E([^/]+)\\Q""") // Replace "colon word (e.g. :id) with a capture group that stops at the next forward slash
     val regexStr = """^\Q""" + colonNameReplaced ++ """\E$"""
     new Regex(regexStr)
   }
@@ -39,7 +39,7 @@ object PathPattern extends Logging {
   }
 }
 
-case class PathPattern(
+private[http] case class PathPattern(
   regex: Regex,
   captureNames: Seq[String] = Seq()) {
 

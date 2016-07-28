@@ -2,7 +2,7 @@ package com.twitter.finatra.json.internal.caseclass.validation.validators
 
 import com.twitter.finatra.validation.{ErrorCode, Min, ValidationMessageResolver, ValidationResult, Validator}
 
-object MinValidator {
+private[finatra] object MinValidator {
 
   def errorMessage(
     resolver: ValidationMessageResolver,
@@ -13,7 +13,7 @@ object MinValidator {
   }
 }
 
-class MinValidator(
+private[finatra] class MinValidator(
   validationMessageResolver: ValidationMessageResolver,
   annotation: Min)
   extends Validator[Min, Any](
@@ -37,36 +37,36 @@ class MinValidator(
       case numberValue: Number =>
         validationResult(numberValue)
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported" format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}] is not supported")
     }
   }
 
   /* Private */
 
   private def validationResult(value: Traversable[_]) = {
-    ValidationResult(
+    ValidationResult.validate(
       minValue <= value.size,
-      errorMessage(value.size),
-      errorCode(value.size))
+      errorMessage(Integer.valueOf(value.size)),
+      errorCode(Integer.valueOf(value.size)))
   }
 
   private def validationResult(value: BigDecimal) = {
-    ValidationResult(
+    ValidationResult.validate(
       BigDecimal(minValue) <= value,
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: BigInt) = {
-    ValidationResult(
+    ValidationResult.validate(
       BigInt(minValue) <= value,
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: Number) = {
-    ValidationResult(
-      minValue <= value.longValue(),
+    ValidationResult.validate(
+      minValue <= value.doubleValue(),
       errorMessage(value),
       errorCode(value))
   }
@@ -74,7 +74,7 @@ class MinValidator(
   private def errorMessage(value: Number) = {
     MinValidator.errorMessage(validationMessageResolver, value, minValue)
   }
-  
+
   private def errorCode(value: Number) = {
     ErrorCode.ValueTooSmall(minValue, value)
   }

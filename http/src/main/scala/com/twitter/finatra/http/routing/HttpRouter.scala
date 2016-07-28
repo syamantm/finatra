@@ -1,13 +1,11 @@
 package com.twitter.finatra.http.routing
 
 import com.twitter.finagle.Filter
-import com.twitter.finagle.httpx.{Request, Response}
-import com.twitter.finatra.http.Controller
-import com.twitter.finatra.http.exceptions.ExceptionMapper
-import com.twitter.finatra.http.internal.exceptions.ExceptionManager
+import com.twitter.finatra.http.exceptions.{ExceptionManager, ExceptionMapper}
 import com.twitter.finatra.http.internal.marshalling.{CallbackConverter, MessageBodyManager}
 import com.twitter.finatra.http.internal.routing.{Route, RoutesByType, RoutingService, Services}
 import com.twitter.finatra.http.marshalling.MessageBodyComponent
+import com.twitter.finatra.http.{Controller, HttpFilter, JavaController}
 import com.twitter.inject.{Injector, Logging}
 import javax.inject.{Inject, Singleton}
 import scala.collection.mutable.ArrayBuffer
@@ -24,54 +22,87 @@ class HttpRouter @Inject()(
   exceptionManager: ExceptionManager)
   extends Logging {
 
-  private type HttpFilter = Filter[Request, Response, Request, Response]
-
   /* Mutable State */
-  private[finatra] val globalFilters = ArrayBuffer[HttpFilter](Filter.identity)
+  private[finatra] var globalBeforeRouteMatchingFilter: HttpFilter = Filter.identity
+  private[finatra] var globalFilter: HttpFilter = Filter.identity
   private[finatra] val routes = ArrayBuffer[Route]()
 
+  private[finatra] lazy val routesByType = partitionRoutesByType()
   private[finatra] lazy val services: Services = {
-    val routesByType = partitionRoutesByType()
-    val composedGlobalFilter = globalFilters reduce {_ andThen _}
-
     Services(
       routesByType,
-      adminService = composedGlobalFilter andThen new RoutingService(routesByType.admin),
-      externalService = composedGlobalFilter andThen new RoutingService(routesByType.external))
+      adminService = globalBeforeRouteMatchingFilter andThen new RoutingService(routesByType.admin),
+      externalService = globalBeforeRouteMatchingFilter andThen new RoutingService(routesByType.external))
   }
 
   /* Public */
 
-  def exceptionMapper[T <: ExceptionMapper[_]: Manifest] = {
+  def exceptionMapper[T <: ExceptionMapper[_]: Manifest]: HttpRouter = {
     exceptionManager.add[T]
     this
   }
 
-  def exceptionMapper[T <: Throwable : Manifest](mapper: ExceptionMapper[T]) = {
+  def exceptionMapper[T <: Throwable : Manifest](mapper: ExceptionMapper[T]): HttpRouter = {
     exceptionManager.add[T](mapper)
     this
   }
 
-  def register[MBR <: MessageBodyComponent : Manifest] = {
+  def register[MBR <: MessageBodyComponent : Manifest]: HttpRouter = {
     messageBodyManager.add[MBR]()
     this
   }
 
-  def register[MBR <: MessageBodyComponent : Manifest, ObjTypeToReadWrite: Manifest] = {
+  def register[MBR <: MessageBodyComponent : Manifest, ObjTypeToReadWrite: Manifest]: HttpRouter = {
     messageBodyManager.addExplicit[MBR, ObjTypeToReadWrite]()
     this
   }
 
-  /** Add global filter used for all requests */
-  def filter[FilterType <: HttpFilter : Manifest] = {
-    globalFilters += injector.instance[FilterType]
+  /** Add global filter used for all requests, by default applied AFTER route matching */
+  def filter(clazz: Class[_ <: HttpFilter]): HttpRouter = {
+    filter(injector.instance(clazz))
+  }
+
+  /** Add global filter used for all requests, optionally BEFORE route matching */
+  def filter(clazz: Class[_ <: HttpFilter], beforeRouting: Boolean): HttpRouter = {
+    if (beforeRouting) {
+      filter(injector.instance(clazz), beforeRouting = true)
+    } else {
+      filter(injector.instance(clazz))
+    }
+  }
+
+  /** Add global filter used for all requests, by default applied AFTER route matching */
+  def filter[FilterType <: HttpFilter : Manifest]: HttpRouter = {
+    filter(injector.instance[FilterType])
+  }
+
+  /** Add global filter used for all requests, optionally BEFORE route matching */
+  def filter[FilterType <: HttpFilter : Manifest](beforeRouting: Boolean): HttpRouter = {
+    if (beforeRouting) {
+      filter(injector.instance[FilterType], beforeRouting = true)
+      this
+    } else {
+      filter(injector.instance[FilterType])
+    }
+  }
+
+  /** Add global filter used for all requests, by default applied AFTER route matching */
+  def filter(filter: HttpFilter): HttpRouter = {
+    assert(routes.isEmpty, "'filter' must be called before 'add'.")
+    globalFilter = globalFilter andThen filter
     this
   }
 
-  /** Add global filter used for all requests */
-  def filter(filter: HttpFilter) = {
-    globalFilters += filter
-    this
+  /** Add global filter used for all requests, optionally BEFORE route matching */
+  def filter(filter: HttpFilter, beforeRouting: Boolean): HttpRouter = {
+    if (beforeRouting) {
+      assert(routes.isEmpty && globalFilter == Filter.identity,
+        "'filter[T](beforeRouting = true)' must be called before 'filter' or 'add'.")
+      globalBeforeRouteMatchingFilter = globalBeforeRouteMatchingFilter andThen filter
+      this
+    } else {
+      this.filter(filter)
+    }
   }
 
   def add(controller: Controller): HttpRouter = {
@@ -87,6 +118,12 @@ class HttpRouter @Inject()(
 
   def add[C <: Controller : Manifest]: HttpRouter = {
     val controller = injector.instance[C]
+    addInjected(controller)
+  }
+
+  def add(clazz: Class[_ <: JavaController]): HttpRouter = {
+    val controller = injector.instance(clazz)
+    controller.configureRoutes()
     addInjected(controller)
   }
 
@@ -124,19 +161,19 @@ class HttpRouter @Inject()(
 
   /* Private */
 
-  private def add[C <: Controller : Manifest](filter: HttpFilter) = {
+  private def add[C <: Controller : Manifest](filter: HttpFilter): HttpRouter = {
     addInjected(
       filter,
       injector.instance[C])
   }
 
-  private def addInjected(controller: Controller) = {
-    routes ++= buildRoutes(controller)
+  private def addInjected(controller: Controller): HttpRouter = {
+    routes ++= buildRoutes(controller) map { _.withFilter(globalFilter) }
     this
   }
 
-  private def addInjected(filter: HttpFilter, controller: Controller) = {
-    val routesWithFilter = buildRoutes(controller) map { _.withFilter(filter) }
+  private def addInjected(filter: HttpFilter, controller: Controller): HttpRouter = {
+    val routesWithFilter = buildRoutes(controller) map { _.withFilter(globalFilter andThen filter) }
     routes ++= routesWithFilter
     this
   }
@@ -147,18 +184,36 @@ class HttpRouter @Inject()(
 
   private[finatra] def partitionRoutesByType(): RoutesByType = {
     info("Adding routes\n" + (routes.map {_.summary} mkString "\n"))
-    val (adminRoutes, externalRoutes) = routes partition {_.path.startsWith("/admin")}
+    val (adminRoutes, externalRoutes) = routes partition { route =>
+      route.path.startsWith("/admin") || route.admin
+    }
     assertAdminRoutes(adminRoutes)
     RoutesByType(
       external = externalRoutes.toSeq,
       admin = adminRoutes.toSeq)
   }
 
-  private def assertAdminRoutes(routes: ArrayBuffer[Route]) = {
+  // constant routes CAN start with /admin/, all others MUST start with /admin/finatra
+  private def assertAdminRoutes(routes: ArrayBuffer[Route]): Unit = {
+    val message = "Error adding route: %s. %s"
+
     for (route <- routes) {
-      if (!(route.path startsWith HttpRouter.FinatraAdminPrefix)) {
-        throw new java.lang.AssertionError(
-          "Error adding " + route.path + ". Finatra /admin routes must start with /admin/finatra/")
+      if (route.constantRoute) {
+        // constant routes MUST start with at least /admin/
+        if (!(route.path startsWith "/admin/")) {
+          val msg = message.format(route.path, "Constant admin interface routes must start with prefix: /admin/")
+          error(msg)
+          throw new java.lang.AssertionError(msg)
+        }
+      } else {
+        // non-constant routes MUST start with /admin/finatra/
+        if(!(route.path startsWith HttpRouter.FinatraAdminPrefix)) {
+          val msg = message.format(
+            route.path,
+            "Non-constant admin interface routes must start with prefix: " + HttpRouter.FinatraAdminPrefix)
+          error(msg)
+          throw new java.lang.AssertionError(msg)
+        }
       }
     }
   }

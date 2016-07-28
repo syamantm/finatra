@@ -1,7 +1,7 @@
 package com.twitter.finatra.httpclient
 
-import com.twitter.finagle.httpx.{Method, Request, Response}
-import com.twitter.finatra.httpclient.test.InMemoryHttpService
+import com.twitter.finagle.http.{Method, Request, Response}
+import com.twitter.finatra.httpclient.test.{InMemoryHttpService, PostRequestWithIncorrectBodyException}
 import com.twitter.inject.Test
 import com.twitter.util.Await
 import org.specs2.mock.Mockito
@@ -34,7 +34,7 @@ class InMemoryHttpServiceTest extends Test with Mockito {
 
     val request = Request(Method.Post, "/foo")
     request.setContentString("11111")
-    assertFailedFuture[Exception] {
+    assertFailedFuture[PostRequestWithIncorrectBodyException] {
       inMemoryHttpService.apply(request)
     }
   }
@@ -55,5 +55,10 @@ class InMemoryHttpServiceTest extends Test with Mockito {
     if (response != expectedResponse) {
       fail(response + " does not equal expected " + expectedResponse)
     }
+  }
+
+  override protected def afterAll() = {
+    super.afterAll()
+    inMemoryHttpService.close()
   }
 }

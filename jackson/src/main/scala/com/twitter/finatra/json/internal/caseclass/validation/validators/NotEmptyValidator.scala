@@ -3,7 +3,7 @@ package com.twitter.finatra.json.internal.caseclass.validation.validators
 import com.twitter.finatra.json.internal.caseclass.validation.validators.NotEmptyValidator._
 import com.twitter.finatra.validation.{ErrorCode, NotEmpty, ValidationMessageResolver, ValidationResult, Validator}
 
-object NotEmptyValidator {
+private[finatra] object NotEmptyValidator {
 
   def errorMessage(
     resolver: ValidationMessageResolver) = {
@@ -12,7 +12,7 @@ object NotEmptyValidator {
   }
 }
 
-class NotEmptyValidator(
+private[finatra] class NotEmptyValidator(
   validationMessageResolver: ValidationMessageResolver,
   annotation: NotEmpty)
   extends Validator[NotEmpty, Any](
@@ -30,21 +30,21 @@ class NotEmptyValidator(
       case stringValue: String =>
         validationResult(stringValue)
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported"format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}}] is not supported")
     }
   }
 
   /* Private */
 
   private def validationResult(value: Traversable[_]) = {
-    ValidationResult(
+    ValidationResult.validate(
       value.nonEmpty,
       errorMessage(validationMessageResolver),
       ErrorCode.ValueCannotBeEmpty)
   }
 
   private def validationResult(value: String) = {
-    ValidationResult(
+    ValidationResult.validate(
       value.nonEmpty,
       errorMessage(validationMessageResolver),
       ErrorCode.ValueCannotBeEmpty)

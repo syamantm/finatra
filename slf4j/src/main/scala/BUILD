@@ -1,7 +1,7 @@
 scala_library(name='scala',
   provides = scala_artifact(
-    org = 'com.twitter.finatra',
-    name = 'slf4j',
+    org = 'com.twitter',
+    name = 'finatra-slf4j',
     repo = artifactory,
   ),
   dependencies=[
@@ -11,8 +11,8 @@ scala_library(name='scala',
     '3rdparty/jvm/org/slf4j:log4j-over-slf4j',
     '3rdparty/jvm/org/slf4j:slf4j-api',
     'finatra/inject/inject-core',
-    'loglens/loglens-logging',
     'util/util-core'
   ],
+  fatal_warnings=True,
   sources=rglobs('*.scala')
 )

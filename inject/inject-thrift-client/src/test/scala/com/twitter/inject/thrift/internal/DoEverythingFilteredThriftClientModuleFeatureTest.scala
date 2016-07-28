@@ -1,24 +1,22 @@
 package com.twitter.inject.thrift.internal
 
-import com.twitter.finagle.Thrift
-import com.twitter.finagle.httpx.Status._
-import com.twitter.finagle.service.RetryPolicy
+import com.twitter.finagle.http.Status._
 import com.twitter.finatra.http.HttpServer
 import com.twitter.finatra.http.filters.CommonFilters
 import com.twitter.finatra.http.routing.HttpRouter
-import com.twitter.finatra.http.test.{EmbeddedHttpServer, HttpTest}
-import com.twitter.greeter.thriftscala.{InvalidOperation, Greeter}
+import com.twitter.finatra.http.{EmbeddedHttpServer, HttpTest}
+import com.twitter.finatra.thrift.EmbeddedThriftServer
 import com.twitter.greeter.thriftscala.Greeter.{Bye, Hi}
-import com.twitter.inject.server.EmbeddedTwitterServer
-import com.twitter.inject.thrift.filtered_integration.http_server.{HiLoggingThriftClientFilter, GreeterHttpController}
+import com.twitter.greeter.thriftscala.{Greeter, InvalidOperation}
+import com.twitter.inject.thrift.filtered_integration.http_server.{GreeterHttpController, HiLoggingThriftClientFilter}
 import com.twitter.inject.thrift.filtered_integration.thrift_server.GreeterThriftServer
-import com.twitter.inject.thrift.{FilterBuilder, FilteredThriftClientModule, ThriftClientIdModule}
-import com.twitter.scrooge.ThriftResponse
+import com.twitter.inject.thrift.filters.ThriftClientFilterBuilder
+import com.twitter.inject.thrift.modules.{ThriftClientIdModule, FilteredThriftClientModule}
 import com.twitter.util._
 
 class DoEverythingFilteredThriftClientModuleFeatureTest extends HttpTest {
 
-  val thriftServer = new EmbeddedTwitterServer(
+  val thriftServer = new EmbeddedThriftServer(
     twitterServer = new GreeterThriftServer)
 
   val httpServer = new EmbeddedHttpServer(
@@ -33,7 +31,7 @@ class DoEverythingFilteredThriftClientModuleFeatureTest extends HttpTest {
           add[GreeterHttpController]
       }
     },
-    extraArgs = Seq(
+    args = Seq(
       "-thrift.clientId=greeter-http-service",
       resolverMap("greeter-thrift-service" -> thriftServer.thriftHostAndPort)))
 
@@ -65,14 +63,14 @@ object GreeterThriftClientModule2
 
   override val label = "greeter-thrift-client"
   override val dest = "flag!greeter-thrift-service"
-  override val connectTimeout = 1.minute.toDuration
+  override val sessionAcquisitionTimeout = 1.minute.toDuration
 
-  override def createFilteredClient(
+  override def filterServiceIface(
     serviceIface: Greeter.ServiceIface,
-    filterBuilder: FilterBuilder): Greeter[Future] = {
+    filter: ThriftClientFilterBuilder) = {
 
-    Thrift.newMethodIface(serviceIface.copy(
-      hi = filterBuilder.method(Hi)
+    serviceIface.copy(
+      hi = filter.method(Hi)
         .constantRetry(
           requestTimeout = 1.minute,
           shouldRetry = {
@@ -85,14 +83,14 @@ object GreeterThriftClientModule2
         .globalFilter(new RequestLoggingThriftClientFilter)
         .filter(new HiLoggingThriftClientFilter)
         .andThen(serviceIface.hi),
-      bye = filterBuilder.method(Bye)
+      bye = filter.method(Bye)
         .globalFilter[RequestLoggingThriftClientFilter]
         .exponentialRetry(
-          shouldRetryResponse = NonFatalExceptions,
+          shouldRetryResponse = PossiblyRetryableExceptions,
           requestTimeout = 1.minute,
           start = 50.millis,
           multiplier = 2,
           retries = 3)
-        .andThen(serviceIface.bye)))
+        .andThen(serviceIface.bye))
   }
 }

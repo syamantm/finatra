@@ -9,7 +9,7 @@ import com.twitter.finatra.json.internal.caseclass.exceptions.CaseClassValidatio
 import com.twitter.finatra.json.internal.caseclass.validation.ValidationManager
 import com.twitter.finatra.json.utils.CamelCasePropertyNamingStrategy
 import com.twitter.finatra.response.JsonCamelCase
-import com.twitter.finatra.validation.{ErrorCode, ValidationMessageResolver, ValidationResult}
+import com.twitter.finatra.validation.{ErrorCode, ValidationMessageResolver}
 import com.twitter.finatra.validation.ValidationResult._
 import com.twitter.inject.Logging
 import com.twitter.util.NonFatal
@@ -31,7 +31,7 @@ import scala.collection.mutable.ArrayBuffer
  * https://github.com/codahale/jerkson/blob/master/src/main/scala/com/codahale/jerkson/deser/CaseClassDeserializer.scala
  */
 @ThreadSafe
-class FinatraCaseClassDeserializer(
+private[finatra] class FinatraCaseClassDeserializer(
   javaType: JavaType,
   config: DeserializationConfig,
   beanDesc: BeanDescription)
@@ -182,7 +182,7 @@ class FinatraCaseClassDeserializer(
 
   private def createAndValidate(constructorValues: Array[Object], fieldErrors: Seq[CaseClassValidationException]): Object = {
     if (fieldErrors.nonEmpty) {
-      throw new CaseClassMappingException(fieldErrors)
+      throw new CaseClassMappingException(fieldErrors.toSet)
     }
 
     val obj = create(constructorValues)
@@ -218,7 +218,7 @@ class FinatraCaseClassDeserializer(
     } yield CaseClassValidationException(PropertyPath.empty, invalid)
 
     if (methodValidationErrors.nonEmpty) {
-      throw new CaseClassMappingException(fieldErrors ++ methodValidationErrors)
+      throw new CaseClassMappingException(fieldErrors.toSet ++ methodValidationErrors.toSet)
     }
   }
 

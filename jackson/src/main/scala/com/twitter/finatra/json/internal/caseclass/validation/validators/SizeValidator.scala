@@ -3,7 +3,7 @@ package com.twitter.finatra.json.internal.caseclass.validation.validators
 import com.twitter.finatra.json.internal.caseclass.validation.validators.SizeValidator._
 import com.twitter.finatra.validation.{ErrorCode, Size, ValidationMessageResolver, ValidationResult, Validator}
 
-object SizeValidator {
+private[finatra] object SizeValidator {
 
   def errorMessage(
     resolver: ValidationMessageResolver,
@@ -25,14 +25,14 @@ object SizeValidator {
       case traversableValue: Traversable[_] =>
         traversableValue.size
       case str: String =>
-        str.size
+        str.length
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported" format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}] is not supported")
     }
   }
 }
 
-class SizeValidator(
+private[finatra] class SizeValidator(
   validationMessageResolver: ValidationMessageResolver,
   annotation: Size)
   extends Validator[Size, Any](
@@ -49,19 +49,19 @@ class SizeValidator(
     val size = value match {
       case arrayValue: Array[_] => arrayValue.length
       case traversableValue: Traversable[_] => traversableValue.size
-      case str: String => str.size
+      case str: String => str.length
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported" format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}] is not supported")
     }
 
-    ValidationResult(
+    ValidationResult.validate(
       isValid(size.toLong),
       errorMessage(
         validationMessageResolver,
         value,
         minValue,
         maxValue),
-      ErrorCode.SizeOutOfRange(size, minValue, maxValue))
+      ErrorCode.SizeOutOfRange(Integer.valueOf(size), minValue, maxValue))
   }
 
   /* Private */

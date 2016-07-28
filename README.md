@@ -1,17 +1,29 @@
 # Finatra
-Fast, testable, Scala HTTP services built on Twitter-Server and Finagle
-
-![finatra logo](finatra_logo.png)
 
 [![Build Status](https://secure.travis-ci.org/twitter/finatra.png?branch=master)](http://travis-ci.org/twitter/finatra?branch=master)
 [![Test Coverage](http://codecov.io/github/twitter/finatra/coverage.svg?branch=master)](http://codecov.io/github/twitter/finatra?branch=master)
-
+[![Project status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twitter.finatra/finatra-http_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.twitter.finatra/finatra-http_2.11)
-
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/twitter/finatra)
 
-Features
------------------------------------------------------------
+## Status
+
+This project is used in production at Twitter (and many other organizations),
+and is being actively developed and maintained.
+
+![finatra logo](finatra_logo.png)
+
+#### Fast, testable, Scala services built on Twitter-Server and Finagle.
+
+## Getting involved
+
+* Website: https://twitter.github.io/finatra/
+* Source: https://github.com/twitter/finatra/
+* Mailing List: [finatra@googlegroups.com](https://groups.google.com/forum/#!forum/finatra)
+
+
+## Features
+
 * Production use as Twitter’s HTTP framework
 * ~50 times faster than v1.6 in several benchmarks
 * Powerful feature and integration test support
@@ -19,19 +31,18 @@ Features
 * [Jackson][jackson] based JSON parsing supporting required fields, default values, and custom validations
 * [Logback][logback] [MDC][mdc] integration with [com.twitter.util.Local][local] for contextual logging across futures
 
-Presentations
------------------------------------------------------------
-* [SFScala Introduction to Finatra Slides](http://twitter.github.io/finatra/assets/FinatraSFScala.pdf)
-* [SFScala Introduction to Finatra Presentation](https://www.youtube.com/watch?v=hkVp9W4c9bs&feature=youtu.be)
-* [FinagleCon Streaming HTTP with Finatra and AsyncStream Slides](http://schd.ws/hosted_files/finaglecon2015/d1/Streaming%20HTTP%20with%20Finatra%20and%20AsyncStream.pdf)
+## Presentations
 
-News
------------------------------------------------------------
-* Finatra is now built against the latest Finagle v6.28.0 and Twitter Server v1.13.0 releases.
-* Starting with version 2.0.0.RC1, finagle-http is no longer supported and finagle-httpx should be exclusively used. As such, please upgrade from com.twitter.http to com.twitter.httpx for all your imports.**
+Check out our list of recent presentations: [Finatra Presentations](http://twitter.github.io/finatra/presentations/)
 
-<a name="quick-start">Quick Start</a>
------------------------------------------------------------
+## News
+
+* Finatra is now built against the latest Finagle v6.33.0 and Twitter Server v1.18.0 releases.
+* Please take a look at our new [User Guide][user-guide]!
+* Keep up with the latest news [here](http://twitter.github.io/finatra/blog/archives/) on our blog.
+
+## <a name="quick-start">Quick Start</a>
+
 To get started we'll focus on building an HTTP API for posting and getting tweets:
 
 ### Domain
@@ -155,9 +166,9 @@ class TwitterCloneFeatureTest extends FeatureTest with Mockito {
       withJsonBody = """
         {
           "errors" : [
-            "message: size [0] is not between 1 and 140",
             "location.lat: [9999.0] is not between -85 and 85",
             "location.long: field is required",
+            "message: size [0] is not between 1 and 140",
             "nsfw: 'abc' is not a valid boolean"
           ]
         }
@@ -166,14 +177,12 @@ class TwitterCloneFeatureTest extends FeatureTest with Mockito {
 }
 ```
 
-Detailed Documentation
------------------------------------------------------------
+## Detailed Documentation
 
-The Finatra project is composed of several libraries (each with their own README).
-[Click here for detailed documentation on the main finatra-http library.](http/README.md)
+The Finatra project is composed of several libraries. You can find details in a project's README or see the [User Guide][user-guide] for detailed information on building applications with Finatra.
 
-Example Projects
------------------------------------------------------------
+## Example Projects
+
 For more detailed information see the README.md within each example project.
 
 ### [hello-world](./examples/hello-world/README.md)
@@ -189,28 +198,24 @@ A url shortening example that is deployable to [Heroku](https://heroku.com).
 An example Twitter-like API for creating and retrieving Tweets.
 
 ### [benchmark-server](examples/benchmark-server/README.md)
-A server used for benchmarking performance compared to a raw finagle-httpx service.
+A server used for benchmarking performance compared to a raw finagle-http service.
 
 ### [streaming](examples/streaming-example/README.md)
 A proof-of-concept streaming JSON service.
 
-Authors
------------------------------------------------------------
+## Authors
+
 * Steve Cosenza <https://github.com/scosenza>
 * Christopher Coco <https://github.com/cacoco>
-* Jason Carey <https://github.com/jcarey03>
-* Eugene Ma <https://github.com/edma2>
-* Nikolaj Nielsen <https://github.com/nhnFreespirit>
-* Alex Leong <https://github.com/adleong>
 
 A full list of [contributors](https://github.com/twitter/finatra/graphs/contributors?type=a) can be found on GitHub.
 
 Follow [@finatra](http://twitter.com/finatra) on Twitter for updates.
 
 
-License
------------------------------------------------------------
-Copyright 2015 Twitter, Inc.
+## License
+
+Copyright 2013-2016 Twitter, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 
@@ -229,3 +234,4 @@ Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/L
 [HttpServer]: http/src/main/scala/com/twitter/finatra/http/HttpServer.scala
 [twitter-clone-example]: examples/twitter-clone/
 [maven-central]: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.twitter.finatra%22
+[user-guide]: http://twitter.github.io/finatra/user-guide/

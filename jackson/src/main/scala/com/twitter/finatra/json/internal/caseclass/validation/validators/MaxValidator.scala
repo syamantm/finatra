@@ -2,7 +2,7 @@ package com.twitter.finatra.json.internal.caseclass.validation.validators
 
 import com.twitter.finatra.validation.{ErrorCode, Max, ValidationMessageResolver, ValidationResult, Validator}
 
-object MaxValidator {
+private[finatra] object MaxValidator {
 
   def errorMessage(
     resolver: ValidationMessageResolver,
@@ -13,7 +13,7 @@ object MaxValidator {
   }
 }
 
-class MaxValidator(
+private[finatra] class MaxValidator(
   validationMessageResolver: ValidationMessageResolver,
   annotation: Max)
   extends Validator[Max, Any](
@@ -37,36 +37,36 @@ class MaxValidator(
       case numberValue: Number =>
         validationResult(numberValue)
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported" format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}] is not supported")
     }
   }
 
   /* Private */
 
   private def validationResult(value: Traversable[_]) = {
-    ValidationResult(
+    ValidationResult.validate(
       value.size <= maxValue,
-      errorMessage(value.size),
-      errorCode(value.size))
+      errorMessage(Integer.valueOf(value.size)),
+      errorCode(Integer.valueOf(value.size)))
   }
 
   private def validationResult(value: BigDecimal) = {
-    ValidationResult(
+    ValidationResult.validate(
       value <= BigDecimal(maxValue),
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: BigInt) = {
-    ValidationResult(
+    ValidationResult.validate(
       value <= BigInt(maxValue),
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: Number) = {
-    ValidationResult(
-      value.longValue() <= maxValue,
+    ValidationResult.validate(
+      value.doubleValue() <= maxValue,
       errorMessage(value),
       errorCode(value))
   }
@@ -74,7 +74,7 @@ class MaxValidator(
   private def errorMessage(value: Number) = {
     MaxValidator.errorMessage(validationMessageResolver, value, maxValue)
   }
-  
+
   private def errorCode(value: Number) = {
     ErrorCode.ValueTooLarge(maxValue, value)
   }

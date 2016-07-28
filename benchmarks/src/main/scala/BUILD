@@ -1,7 +1,7 @@
 scala_library(name='scala',
   provides = scala_artifact(
-    org = 'com.twitter.finatra',
-    name = 'benchmarks',
+    org = 'com.twitter',
+    name = 'finatra-benchmarks',
     repo = artifactory,
   ),
   dependencies=[
@@ -12,8 +12,10 @@ scala_library(name='scala',
     'finagle/finagle-stats',
     'finatra/benchmarks/src/main/java',
     'finatra/http',
+    'finatra/inject/inject-request-scope',
     'twitter-server',
     'util/util-core',
   ],
+  fatal_warnings=True,
   sources=rglobs('*.scala'),
 )

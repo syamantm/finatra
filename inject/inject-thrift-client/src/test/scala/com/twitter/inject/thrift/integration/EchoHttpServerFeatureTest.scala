@@ -1,19 +1,19 @@
 package com.twitter.inject.thrift.integration
 
-import com.twitter.finagle.httpx.Status._
-import com.twitter.finatra.http.test.{EmbeddedHttpServer, HttpTest}
-import com.twitter.inject.server.EmbeddedTwitterServer
+import com.twitter.finagle.http.Status._
+import com.twitter.finatra.http.{EmbeddedHttpServer, HttpTest}
+import com.twitter.finatra.thrift.EmbeddedThriftServer
 import com.twitter.inject.thrift.integration.http_server.EchoHttpServer
 import com.twitter.inject.thrift.integration.thrift_server.EchoThriftServer
 
 class EchoHttpServerFeatureTest extends HttpTest {
 
-  val thriftServer = new EmbeddedTwitterServer(
+  val thriftServer = new EmbeddedThriftServer(
     twitterServer = new EchoThriftServer)
 
   val httpServer = new EmbeddedHttpServer(
     twitterServer = new EchoHttpServer,
-    extraArgs = Seq(
+    args = Seq(
       "-thrift.clientId=echo-http-service",
       resolverMap("thrift-echo-service" -> thriftServer.thriftHostAndPort)))
 
@@ -36,7 +36,8 @@ class EchoHttpServerFeatureTest extends HttpTest {
         andExpect = Ok,
         withBody = "BobBobBob")
 
-      httpServer.printStats()
+      httpServer.assertStat("route/config/POST/response_size", Seq(1, 1))
+      httpServer.assertStat("route/echo/GET/response_size", Seq(9))
 
       httpServer.close()
       thriftServer.close()

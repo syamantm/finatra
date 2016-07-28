@@ -1,8 +1,8 @@
 #!/bin/bash
 
-sbtver=0.13.8
+sbtver=0.13.9
 sbtjar=sbt-launch.jar
-sbtsha128=57d0f04f4b48b11ef7e764f4cea58dee4e806ffd
+sbtsha128=1de48c2c412fffc4336e4d7dee224927a96d5abc
 sbtrepo="http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/$sbtver/$sbtjar"
 
 if [ ! -f "./$sbtjar" ]; then
@@ -21,13 +21,6 @@ fi
 
 javaVersion=`java -version 2>&1 | grep "java version" | awk '{print $3}' | tr -d \"`
 
-# Workaround for JDK issue: https://bugs.openjdk.java.net/browse/JDK-8058847
-# only add the option on version JDK8
-ELIMINATE_AUTOBOX_JVM_ARG=""
-if [[ $javaVersion == *"8"* ]]; then
-  ELIMINATE_AUTOBOX_JVM_ARG="-XX:-EliminateAutoBox"
-fi
-
 [ -f ~/.sbtconfig ] && . ~/.sbtconfig
 
 CMD="java -ea                     \
@@ -38,13 +31,12 @@ CMD="java -ea                     \
   -XX:+UseConcMarkSweepGC         \
   -XX:+CMSParallelRemarkEnabled   \
   -XX:+CMSClassUnloadingEnabled   \
-  -XX:ReservedCodeCacheSize=256M  \
-  -XX:MaxPermSize=1024M           \
+  -XX:ReservedCodeCacheSize=128m  \
   -XX:SurvivorRatio=128           \
   -XX:MaxTenuringThreshold=0      \
-  ${ELIMINATE_AUTOBOX_JVM_ARG}    \
-  -Xms1024M                       \
-  -Xmx3072M                       \
+  -XX:-EliminateAutoBox           \
+  -Xms512M                        \
+  -Xmx1280M                       \
   -server                         \
   -jar $sbtjar ${@:1}"
 

@@ -1,6 +1,6 @@
 scala_library(name='scala',
   provides = scala_artifact(
-    org = 'com.twitter.inject',
+    org = 'com.twitter',
     name = 'inject-request-scope',
     repo = artifactory,
   ),
@@ -11,6 +11,7 @@ scala_library(name='scala',
     'finatra/inject/inject-core',
     'util/util-core',
   ],
+  fatal_warnings=True,
   sources=rglobs('*.scala'),
   java_sources=[
     'finatra/inject/inject-request-scope/src/main/java',

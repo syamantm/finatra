@@ -1,20 +1,15 @@
 package com.twitter.finatra.http.internal.marshalling.mustache
 
 import com.google.common.net.MediaType
-import com.twitter.finatra.conversions.map._
-import com.twitter.finatra.http.marshalling.mustache.MustacheService
+import com.twitter.finatra.http.marshalling.mustache.{MustacheBodyComponent, MustacheService}
 import com.twitter.finatra.http.marshalling.{MessageBodyWriter, WriterResponse}
-import com.twitter.finatra.response.Mustache
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.{Inject, Singleton}
-import scala.collection.JavaConverters._
 
 @Singleton
 class MustacheMessageBodyWriter @Inject()(
-  mustacheService: MustacheService)
+  mustacheService: MustacheService,
+  templateLookup: MustacheTemplateNameLookup)
   extends MessageBodyWriter[Any] {
-
-  private val classToViewNameCache = new ConcurrentHashMap[Class[_], String]().asScala
 
   /* Public */
 
@@ -22,17 +17,18 @@ class MustacheMessageBodyWriter @Inject()(
     WriterResponse(
       MediaType.HTML_UTF_8,
       mustacheService.createBuffer(
-        lookupTemplateName(obj),
-        obj))
+        templateLookup.getTemplateName(obj),
+        getScope(obj))
+    )
   }
 
   /* Private */
 
-
-  private def lookupTemplateName(viewObj: Any): String = {
-    classToViewNameCache.atomicGetOrElseUpdate(viewObj.getClass, {
-      val mustacheAnnotation = viewObj.getClass.getAnnotation(classOf[Mustache])
-      mustacheAnnotation.value + ".mustache"
-    })
+  private def getScope(obj: Any): Any = {
+    obj match {
+      case c: MustacheBodyComponent => c.data
+      case _ => obj
+    }
   }
+
 }

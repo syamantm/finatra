@@ -1,0 +1,16 @@
+junit_tests(name='scala',
+  dependencies=[
+    '3rdparty/jvm/ch/qos/logback:logback-classic',
+    'finatra/inject/inject-core',
+    'finatra/inject/inject-core:test-deps',
+    'finatra/inject/inject-utils',
+  ],
+  fatal_warnings=True,
+  sources=globs(
+    'com/twitter/inject/tests/*.scala',
+    'com/twitter/inject/tests/conversions/*.scala',
+    'com/twitter/inject/tests/exceptions/*.scala'),
+  resources=[
+    'finatra/inject/inject-utils/src/test/resources'
+  ]
+)

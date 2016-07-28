@@ -4,17 +4,17 @@ import javax.inject.{Inject, Singleton}
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.google.inject.Injector
-import com.twitter.finagle.httpx.Request
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.marshalling.DefaultMessageBodyReader
 import com.twitter.finatra.json.FinatraObjectMapper
 import com.twitter.finatra.request.JsonIgnoreBody
 
-object FinatraDefaultMessageBodyReader {
+private[finatra] object FinatraDefaultMessageBodyReader {
   private val EmptyObjectNode = new ObjectNode(null)
 }
 
 @Singleton
-class FinatraDefaultMessageBodyReader @Inject()(
+private[finatra] class FinatraDefaultMessageBodyReader @Inject()(
   injector: Injector,
   objectMapper: FinatraObjectMapper)
   extends DefaultMessageBodyReader {

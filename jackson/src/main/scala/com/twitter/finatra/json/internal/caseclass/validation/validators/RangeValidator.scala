@@ -2,7 +2,7 @@ package com.twitter.finatra.json.internal.caseclass.validation.validators
 
 import com.twitter.finatra.validation.{ErrorCode, Range, ValidationMessageResolver, ValidationResult, Validator}
 
-object RangeValidator {
+private[finatra] object RangeValidator {
 
   def errorMessage(
     resolver: ValidationMessageResolver,
@@ -14,7 +14,7 @@ object RangeValidator {
   }
 }
 
-class RangeValidator(
+private[finatra] class RangeValidator(
   validationMessageResolver: ValidationMessageResolver,
   annotation: Range)
   extends Validator[Range, Any](
@@ -35,30 +35,30 @@ class RangeValidator(
       case numberValue: Number =>
         validationResult(numberValue)
       case _ =>
-        throw new IllegalArgumentException("Class [%s] is not supported" format value.getClass)
+        throw new IllegalArgumentException(s"Class [${value.getClass}] is not supported")
     }
   }
 
   /* Private */
 
   private def validationResult(value: BigDecimal) = {
-    ValidationResult(
+    ValidationResult.validate(
       BigDecimal(minValue) <= value && value <= BigDecimal(maxValue),
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: BigInt) = {
-    ValidationResult(
+    ValidationResult.validate(
       BigInt(minValue) <= value && value <= BigInt(maxValue),
       errorMessage(value),
       errorCode(value))
   }
 
   private def validationResult(value: Number) = {
-    val longValue = value.longValue()
-    ValidationResult(
-      minValue <= longValue && longValue <= maxValue,
+    val doubleValue = value.doubleValue()
+    ValidationResult.validate(
+      minValue <= doubleValue && doubleValue <= maxValue,
       errorMessage(value),
       errorCode(value))
   }
@@ -70,8 +70,8 @@ class RangeValidator(
       minValue,
       maxValue)
   }
-  
+
   private def errorCode(value: Number) = {
-    ErrorCode.ValueOutOfRange(value.longValue, minValue, maxValue)
+    ErrorCode.ValueOutOfRange(java.lang.Long.valueOf(value.longValue), minValue, maxValue)
   }
 }

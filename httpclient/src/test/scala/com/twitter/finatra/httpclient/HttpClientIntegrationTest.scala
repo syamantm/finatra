@@ -3,7 +3,7 @@ package com.twitter.finatra.httpclient
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.inject.testing.fieldbinder.Bind
 import com.twitter.finagle.Service
-import com.twitter.finagle.httpx.{Request, Response, Status}
+import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finatra.httpclient.modules.HttpClientModule
 import com.twitter.finatra.httpclient.test.InMemoryHttpService
 import com.twitter.finatra.json.modules.FinatraJacksonModule
@@ -55,13 +55,26 @@ class HttpClientIntegrationTest extends IntegrationTest {
     }
   }
 
+  "executeJson w/ expected response but unparsable body" in {
+    val mockResponse = Response(Status.Ok)
+    mockResponse.setContentString("{}")
+    inMemoryHttpService.mockGet("/foo", mockResponse)
+    val request = RequestBuilder.get("/foo")
+
+    val e = intercept[HttpClientException] {
+      Await.result(
+        httpClient.executeJson[Int](request))
+    }
+    assert(e.getMessage.contains("com.fasterxml.jackson.databind.JsonMappingException"))
+  }
+
   "get" in {
     val mockResponse = Response(Status.Ok)
     mockResponse.setContentString("{}")
     inMemoryHttpService.mockGet("/foo", mockResponse)
 
     Await.result(
-      httpClient.get("/foo")) should be(mockResponse)
+      httpClient.get("/foo")) should be(mockResponse) //Purposely using deprecated method for test coverage
   }
 
   object MyHttpClientModule extends HttpClientModule {

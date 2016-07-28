@@ -1,21 +1,26 @@
 package com.twitter.inject.app.tests
 
-import com.twitter.inject.app.{EmbeddedApp, FeatureTest}
-import com.twitter.util.Await
+import com.twitter.inject.Test
+import com.twitter.inject.app.EmbeddedApp
 
-class SampleAppIntegrationTest extends FeatureTest {
-
-  override val app =
-    new EmbeddedApp(
-      new SampleGuiceApp,
-      waitForWarmup = true,
-      skipAppMain = true)
+class SampleAppIntegrationTest extends Test {
 
   "start app" in {
-    app.start()
-    app.appMain()
+    val app =
+      new EmbeddedApp(new SampleApp)
 
-    Await.result(
-      app.mainResult)
+    app.main()
+  }
+
+  "exception in App#run() throws" in {
+    val app = new EmbeddedApp(
+      new SampleApp {
+        override protected def run(): Unit = {
+          throw new RuntimeException("FORCED EXCEPTION")
+        }})
+
+    intercept[Exception] {
+      app.main()
+    }
   }
 }

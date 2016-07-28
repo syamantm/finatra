@@ -1,9 +1,7 @@
 junit_tests(name='scala',
   dependencies=[
-    'finatra/utils',
     'finatra/utils:test-deps',
     'finatra/inject/inject-core:test-deps',
-    'finatra/inject/inject-server:test-deps',
   ],
   sources=rglobs(
     'com/twitter/finatra/tests/*.scala',
@@ -15,8 +13,8 @@ junit_tests(name='scala',
 
 scala_library(name="test-deps",
   provides = scala_artifact(
-    org = 'com.twitter.finatra',
-    name = 'utils-test-jar',
+    org = 'com.twitter',
+    name = 'finatra-utils-test-jar',
     repo = artifactory,
   ),
   dependencies=[
@@ -24,9 +22,11 @@ scala_library(name="test-deps",
     'finagle/finagle-stats',
     'finatra/inject/inject-core:test-deps',
     'finatra/inject/inject-server:test-deps',
+    'finatra/utils',
   ],
+  fatal_warnings=True,
   sources=globs(
-    'com/twitter/finatra/guice/*.scala',
+    'com/twitter/finatra/modules/*.scala',
     'com/twitter/finatra/test/*.scala'
   )
 )

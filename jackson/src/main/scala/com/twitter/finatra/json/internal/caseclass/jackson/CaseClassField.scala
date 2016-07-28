@@ -7,22 +7,27 @@ import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.node.TreeTraversingParser
 import com.fasterxml.jackson.databind.util.ClassUtil
+<<<<<<< HEAD
 import com.twitter.finatra.json.internal.caseclass.annotations.{FormParamInternal, QueryParamInternal, HeaderInternal}
 import com.twitter.finatra.json.internal.caseclass.exceptions.CaseClassValidationException
+=======
+>>>>>>> upstream/master
 import com.twitter.finatra.json.internal.caseclass.exceptions.CaseClassValidationException.PropertyPath
+import com.twitter.finatra.json.internal.caseclass.exceptions.{CaseClassValidationException, FinatraJsonMappingException}
 import com.twitter.finatra.json.internal.caseclass.reflection.CaseClassSigParser
 import com.twitter.finatra.json.internal.caseclass.reflection.DefaultMethodUtils.defaultFunction
 import com.twitter.finatra.json.internal.caseclass.utils.AnnotationUtils._
 import com.twitter.finatra.json.internal.caseclass.utils.FieldInjection
-import com.twitter.finatra.validation.{ErrorCode, Validation}
+import com.twitter.finatra.request.{QueryParam, Header, FormParam}
 import com.twitter.finatra.validation.ValidationResult._
+import com.twitter.finatra.validation.{ErrorCode, Validation}
 import com.twitter.inject.Logging
 import java.lang.annotation.Annotation
 import scala.annotation.tailrec
 import scala.language.existentials
 import scala.reflect.NameTransformer
 
-object CaseClassField {
+private[finatra] object CaseClassField {
 
   def createFields(clazz: Class[_], namingStrategy: PropertyNamingStrategy, typeFactory: TypeFactory): Seq[CaseClassField] = {
     val allAnnotations = constructorAnnotations(clazz)
@@ -72,7 +77,7 @@ object CaseClassField {
   }
 }
 
-case class CaseClassField(
+private[finatra] case class CaseClassField(
   name: String,
   javaType: JavaType,
   parentClass: Class[_],
@@ -117,7 +122,7 @@ case class CaseClassField(
       fieldInjection.inject(context, codec) orElse defaultValue getOrElse throwRequiredFieldException()
     else {
       val fieldJsonNode = objectJsonNode.get(name)
-      if (fieldJsonNode != null)
+      if (fieldJsonNode != null && !fieldJsonNode.isNull)
         if (isOption)
           Option(
             parseFieldValue(codec, fieldJsonNode, firstTypeParam, context))
@@ -155,10 +160,19 @@ case class CaseClassField(
 
   //optimized
   private[this] def assertNotNull(field: JsonNode, value: Object): Object = {
-    if (value == null) {
-      throw new JsonMappingException("error parsing '" + field.asText + "'")
+    value match {
+      case null => throw new FinatraJsonMappingException("error parsing '" + field.asText + "'")
+      case traversable: Traversable[_] => assertNotNull(traversable)
+      case array: Array[_] => assertNotNull(array)
+      case _ => // no-op
     }
     value
+  }
+
+  private def assertNotNull(traversable: Traversable[_]): Unit = {
+    if (traversable.exists(_ == null))  {
+      throw new FinatraJsonMappingException("Literal null values are not allowed as json array elements.")
+    }
   }
 
   private def defaultValue: Option[Object] = {
@@ -190,9 +204,15 @@ case class CaseClassField(
 
   private def extractAttributeType(annotation: Annotation): Option[String] = {
     annotation match {
+<<<<<<< HEAD
       case h : QueryParamInternal => Some("queryParam")
       case f : FormParamInternal => Some("formParam")
       case h : HeaderInternal => Some("header")
+=======
+      case _: QueryParam => Some("queryParam")
+      case _: FormParam => Some("formParam")
+      case _: Header => Some("header")
+>>>>>>> upstream/master
       case _ => None
     }
   }

@@ -1,0 +1,15 @@
+java_library(
+  name='java',
+  dependencies=[
+    '3rdparty/jvm/ch/qos/logback:logback-classic',
+    '3rdparty/jvm/com/google/inject:guice',
+    '3rdparty/jvm/javax/inject:javax.inject',
+    'finatra/inject/inject-server',
+    'finatra/slf4j'
+  ],
+  fatal_warnings=False,
+  sources=rglobs('*.java'),
+  resources=[
+    'finatra/examples/java-server/src/main/resources'
+  ]
+)

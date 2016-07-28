@@ -4,13 +4,13 @@ import com.twitter.greeter.thriftscala.Greeter
 import com.twitter.inject.Test
 import com.twitter.inject.app.TestInjector
 import com.twitter.inject.modules.StatsReceiverModule
-import com.twitter.inject.thrift.{ThriftClientIdModule, ThriftClientModule}
+import com.twitter.inject.thrift.modules.{ThriftClientModule, ThriftClientIdModule}
 
 class ThriftClientModuleNonMuxTest extends Test {
 
   val injector = TestInjector(
     modules = Seq(ThriftClientModuleNonMux, ThriftClientIdModule, StatsReceiverModule),
-    clientFlags = Map("com.twitter.server.resolverMap" -> "greeter-thrift-service=nil!"))
+    flags = Map("com.twitter.server.resolverMap" -> "greeter-thrift-service=nil!"))
 
   "test" in {
     val client = injector.instance[Greeter.FutureIface]

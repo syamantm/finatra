@@ -8,8 +8,10 @@ junit_tests(name='scala',
     'finatra/inject/inject-app:test-deps',
     'finatra/inject/inject-core:test-deps',
   ],
+  fatal_warnings=True,
   sources=globs(
     'com/twitter/inject/app/tests/*.scala',
+    'com/twitter/inject/app/tests/internal/*.scala'
   ),
   resources=[
     'finatra/inject/inject-app/src/test/resources'
@@ -18,7 +20,7 @@ junit_tests(name='scala',
 
 scala_library(name="test-deps",
   provides = scala_artifact(
-    org = 'com.twitter.inject',
+    org = 'com.twitter',
     name = 'inject-app-test-jar',
     repo = artifactory,
   ),
@@ -28,6 +30,7 @@ scala_library(name="test-deps",
     'finatra/inject/inject-core',
     'finatra/inject/inject-core:test-deps',
   ],
+  fatal_warnings=True,
   sources=globs(
     'com/twitter/inject/app/*.scala',
   )

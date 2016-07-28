@@ -1,7 +1,7 @@
 scala_library(name='scala',
   provides = scala_artifact(
-    org = 'com.twitter.finatra',
-    name = 'jackson',
+    org = 'com.twitter',
+    name = 'finatra-jackson',
     repo = artifactory,
   ),
   dependencies=[
@@ -18,6 +18,7 @@ scala_library(name='scala',
     '3rdparty/jvm/org/scala-lang:scala-compiler',
     'finatra/utils',
   ],
+  fatal_warnings=True,
   sources=rglobs('*.scala'),
   java_sources=[
     'finatra/jackson/src/main/java'

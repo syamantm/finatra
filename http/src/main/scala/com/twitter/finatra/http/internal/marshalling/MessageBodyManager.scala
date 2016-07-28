@@ -1,7 +1,6 @@
 package com.twitter.finatra.http.internal.marshalling
 
-import com.twitter.finagle.httpx.Request
-import com.twitter.finatra.conversions.map._
+import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.marshalling._
 import com.twitter.inject.Injector
 import com.twitter.inject.TypeUtils.singleTypeParam
@@ -29,7 +28,7 @@ class MessageBodyManager @Inject()(
 
   /* Public (Config methods called during server startup) */
 
-  def add[MBC <: MessageBodyComponent : Manifest]() {
+  def add[MBC <: MessageBodyComponent : Manifest](): Unit = {
     val componentSupertypeClass =
       if (classOf[MessageBodyReader[_]].isAssignableFrom(manifest[MBC].runtimeClass))
         classOf[MessageBodyReader[_]]
@@ -42,13 +41,19 @@ class MessageBodyManager @Inject()(
       singleTypeParam(componentSupertypeType))
   }
 
-  def addByAnnotation[Ann <: Annotation : Manifest, T <: MessageBodyWriter[_] : Manifest] {
+  def addByAnnotation[Ann <: Annotation : Manifest, T <: MessageBodyWriter[_] : Manifest](): Unit = {
     val messageBodyWriter = injector.instance[T]
     val annot = manifest[Ann].runtimeClass.asInstanceOf[Class[Ann]]
     annotationTypeToWriter(annot) = messageBodyWriter.asInstanceOf[MessageBodyWriter[Any]]
   }
 
-  def addExplicit[MBC <: MessageBodyComponent : Manifest, TypeToReadOrWrite: Manifest]() {
+  def addByComponentType[M <: MessageBodyComponent : Manifest, T <: MessageBodyWriter[_] : Manifest](): Unit = {
+    val messageBodyWriter = injector.instance[T]
+    val componentType = manifest[M].runtimeClass.asInstanceOf[Class[M]]
+    writerCache.putIfAbsent(componentType, messageBodyWriter.asInstanceOf[MessageBodyWriter[Any]])
+  }
+
+  def addExplicit[MBC <: MessageBodyComponent : Manifest, TypeToReadOrWrite: Manifest](): Unit = {
     add[MBC](
       typeLiteral[TypeToReadOrWrite].getType)
   }
@@ -57,7 +62,7 @@ class MessageBodyManager @Inject()(
 
   def read[T: Manifest](request: Request): T = {
     val requestManifest = manifest[T]
-    readerCache.atomicGetOrElseUpdate(requestManifest, {
+    readerCache.getOrElseUpdate(requestManifest, {
       val objType = typeLiteral(requestManifest).getType
       classTypeToReader.get(objType)
     }) match {
@@ -71,20 +76,20 @@ class MessageBodyManager @Inject()(
   // Note: writerCache is bounded on the number of unique classes returned from controller routes */
   def writer(obj: Any): MessageBodyWriter[Any] = {
     val objClass = obj.getClass
-    writerCache.atomicGetOrElseUpdate(objClass, {
+    writerCache.getOrElseUpdate(objClass, {
       (classTypeToWriter.get(objClass) orElse classAnnotationToWriter(objClass)) getOrElse defaultMessageBodyWriter
     })
   }
 
   /* Private */
 
-  private def add[MessageBodyComponent: Manifest](typeToReadOrWrite: Type) {
-    val messageBodyComponent = injector.instance[MessageBodyComponent]
+  private def add[MessageBodyComp: Manifest](typeToReadOrWrite: Type): Unit = {
+    val messageBodyComponent = injector.instance[MessageBodyComp]
 
     messageBodyComponent match {
-      case reader: MessageBodyReader[Any] =>
-        classTypeToReader(typeToReadOrWrite) = reader
-      case writer: MessageBodyWriter[Any] =>
+      case reader: MessageBodyReader[_] =>
+        classTypeToReader(typeToReadOrWrite) = reader.asInstanceOf[MessageBodyReader[Any]]
+      case writer: MessageBodyWriter[_] =>
         classTypeToWriter(typeToReadOrWrite) = writer.asInstanceOf[MessageBodyWriter[Any]]
     }
   }
